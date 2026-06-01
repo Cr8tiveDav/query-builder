@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { QueryRule, SchemaField } from "@/types/query";
+import React, { useState } from "react";
+import { QueryRule } from "@/types/query";
 import { useQueryStore } from "@/hooks/useQueryStore";
 
 interface RuleRowProps {
@@ -12,6 +12,9 @@ interface RuleRowProps {
 export const RuleRow: React.FC<RuleRowProps> = ({ rule, parentId }) => {
   const { currentSchema, updateRule, removeNode } = useQueryStore();
   const [tagInput, setTagInput] = useState("");
+  const [isDraggable, setIsDraggable] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   const fieldDef =
     currentSchema.fields.find((f) => f.name === rule.field) ||
@@ -53,10 +56,82 @@ export const RuleRow: React.FC<RuleRowProps> = ({ rule, parentId }) => {
     handleValueChange(tags.filter((_, idx) => idx !== indexToRemove));
   };
 
+  // Drag and Drop Handlers
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.setData("text/plain", rule.id);
+    e.dataTransfer.effectAllowed = "move";
+    setIsDragging(true);
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+    setIsDraggable(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    
+    const draggedId = e.dataTransfer.getData("text/plain");
+    if (draggedId && draggedId !== rule.id) {
+      const rootTree = useQueryStore.getState().queryTree;
+
+      const findParentAndIndex = (
+        group: typeof rootTree
+      ): { parentId: string; index: number } | null => {
+        const idx = group.children.findIndex((c) => c.id === rule.id);
+        if (idx !== -1) {
+          return { parentId: group.id, index: idx };
+        }
+        for (const child of group.children) {
+          if (child.type === "group") {
+            const res = findParentAndIndex(child);
+            if (res) return res;
+          }
+        }
+        return null;
+      };
+
+      const result = findParentAndIndex(rootTree);
+      if (result) {
+        useQueryStore.getState().moveNode(draggedId, result.parentId, result.index);
+      }
+    }
+  };
+
   return (
-    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-3.5 rounded-xl border border-zinc-200/50 bg-white/60 dark:border-zinc-800/40 dark:bg-zinc-900/10 shadow-sm transition group hover:shadow-md hover:border-zinc-200 dark:hover:border-zinc-800">
-      {/* Drag Handle Placeholder */}
-      <div className="hidden sm:flex items-center text-zinc-300 dark:text-zinc-700 cursor-grab active:cursor-grabbing mr-1">
+    <div
+      draggable={isDraggable}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      className={`flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-3.5 rounded-xl border border-zinc-200/50 bg-white/60 dark:border-zinc-800/40 dark:bg-zinc-900/10 shadow-sm transition group hover:shadow-md hover:border-zinc-200 dark:hover:border-zinc-800 ${
+        isDragging ? "opacity-40" : ""
+      } ${
+        isDragOver
+          ? "border-dashed border-2 border-indigo-500 bg-indigo-500/5 dark:border-indigo-500/80 dark:bg-indigo-500/10"
+          : ""
+      }`}
+    >
+      {/* Drag Handle */}
+      <div
+        onMouseEnter={() => setIsDraggable(true)}
+        onMouseLeave={() => setIsDraggable(false)}
+        className="hidden sm:flex items-center text-zinc-300 dark:text-zinc-700 cursor-grab active:cursor-grabbing mr-1"
+      >
         <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 8h16M4 16h16" />
         </svg>
