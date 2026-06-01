@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useQueryStore } from "@/hooks/useQueryStore";
 import { generateSQL } from "@/utils/queryGenerators";
+import { QueryGroup } from "@/components/builder/QueryGroup";
 
 export const QueryCanvas: React.FC = () => {
   const { currentSchema, queryTree, resetQuery, addHistoryEntry } = useQueryStore();
@@ -24,7 +25,7 @@ export const QueryCanvas: React.FC = () => {
       
       // Auto-hide success toast after 3 seconds
       setTimeout(() => setSuccessMessage(null), 3000);
-    }, 600000 / 1000); // 600ms
+    }, 600); // 600ms
   };
 
   return (
@@ -53,7 +54,7 @@ export const QueryCanvas: React.FC = () => {
             onClick={handleRunQuery}
             disabled={isRunning}
             type="button"
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold text-white bg-indigo-600 shadow-md shadow-indigo-600/10 hover:bg-indigo-500 hover:shadow-indigo-500/20 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed dark:bg-indigo-500 dark:hover:bg-indigo-600 transition"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold text-white bg-indigo-600 shadow-md shadow-indigo-600/10 hover:bg-indigo-500 hover:shadow-indigo-500/20 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed dark:bg-indigo-50 dark:hover:bg-indigo-600 transition"
           >
             {isRunning ? (
               <>
@@ -87,32 +88,8 @@ export const QueryCanvas: React.FC = () => {
       )}
 
       {/* Builder Workspace Layout */}
-      <div className="flex-1 flex flex-col items-center justify-center p-8 rounded-2xl border border-zinc-200/60 bg-white/50 dark:border-zinc-800/60 dark:bg-zinc-950/20 backdrop-blur-sm min-h-[350px]">
-        {/* Placeholder Content - Will be replaced by rules logic in PR 4 */}
-        <div className="max-w-md text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 dark:bg-indigo-950/30 text-indigo-500 dark:text-indigo-400 mb-4 shadow-inner">
-            <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-            </svg>
-          </div>
-          <h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-200">
-            Interactive Editor Canvas
-          </h3>
-          <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-            The visual editor modules (Rule Rows, AND/OR logic groups, Drag and Drop triggers) will sit here on the next PR branch.
-          </p>
-          <div className="mt-6 flex flex-wrap gap-2 justify-center">
-            <span className="px-2.5 py-1 rounded bg-zinc-100 text-[10px] font-semibold text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
-              Rule Tree: root
-            </span>
-            <span className="px-2.5 py-1 rounded bg-zinc-100 text-[10px] font-semibold text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
-              Conjunction: {queryTree.conjunction}
-            </span>
-            <span className="px-2.5 py-1 rounded bg-zinc-100 text-[10px] font-semibold text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
-              Nodes: {queryTree.children?.length || 0}
-            </span>
-          </div>
-        </div>
+      <div className="flex-1 flex flex-col items-start justify-start p-6 sm:p-8 rounded-2xl border border-zinc-200/60 bg-white/50 dark:border-zinc-800/60 dark:bg-zinc-950/20 backdrop-blur-sm min-h-[350px] overflow-x-auto">
+        <QueryGroup group={queryTree} />
       </div>
     </div>
   );
