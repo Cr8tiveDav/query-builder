@@ -57,10 +57,10 @@ export const Header: React.FC = () => {
           </div>
           <div>
             <h1 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50 leading-none">
-              Antigravity
+              QueryCraft
             </h1>
             <span className="text-[10px] font-semibold uppercase tracking-wider text-indigo-500 dark:text-indigo-400">
-              Query Builder
+              Visual Builder
             </span>
           </div>
         </div>
