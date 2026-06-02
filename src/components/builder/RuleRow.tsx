@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { QueryRule } from "@/types/query";
 import { useQueryStore } from "@/hooks/useQueryStore";
+import { validateQueryTree } from "@/utils/queryValidator";
 
 interface RuleRowProps {
   rule: QueryRule;
@@ -10,10 +11,14 @@ interface RuleRowProps {
 }
 
 export const RuleRow: React.FC<RuleRowProps> = ({ rule, parentId }) => {
-  const { currentSchema, updateRule, removeNode } = useQueryStore();
+  const { currentSchema, queryTree, updateRule, removeNode } = useQueryStore();
   const [tagInput, setTagInput] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
+
+  // Compute validation errors reactively using derived state
+  const validationErrors = validateQueryTree(queryTree, currentSchema.id);
+  const error = validationErrors[rule.id];
   
   // Track if drag started from the handle
   const isDraggingHandle = useRef(false);
@@ -134,24 +139,27 @@ export const RuleRow: React.FC<RuleRowProps> = ({ rule, parentId }) => {
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-3.5 rounded-xl border border-zinc-200/50 bg-white/60 dark:border-zinc-800/40 dark:bg-zinc-900/10 shadow-sm transition group hover:shadow-md hover:border-zinc-200 dark:hover:border-zinc-800 ${
-        isDragging ? "opacity-40" : ""
-      } ${
+      className={`flex flex-col gap-2 p-3.5 rounded-xl border bg-white/60 dark:bg-zinc-900/10 shadow-sm transition group hover:shadow-md ${
+        error
+          ? "border-red-500/70 dark:border-red-500/50 ring-1 ring-red-500/15"
+          : "border-zinc-200/50 dark:border-zinc-800/40 hover:border-zinc-200 dark:hover:border-zinc-800"
+      } ${isDragging ? "opacity-40" : ""} ${
         isDragOver
           ? "border-dashed border-2 border-indigo-500 bg-indigo-500/5 dark:border-indigo-500/80 dark:bg-indigo-500/10"
           : ""
       }`}
     >
-      {/* Drag Handle */}
-      <div
-        onMouseDown={() => { isDraggingHandle.current = true; }}
-        onMouseUp={() => { isDraggingHandle.current = false; }}
-        className="drag-handle hidden sm:flex items-center text-zinc-300 dark:text-zinc-700 cursor-grab active:cursor-grabbing mr-1"
-      >
-        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 8h16M4 16h16" />
-        </svg>
-      </div>
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full">
+        {/* Drag Handle */}
+        <div
+          onMouseDown={() => { isDraggingHandle.current = true; }}
+          onMouseUp={() => { isDraggingHandle.current = false; }}
+          className="drag-handle hidden sm:flex items-center text-zinc-300 dark:text-zinc-700 cursor-grab active:cursor-grabbing mr-1"
+        >
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 8h16M4 16h16" />
+          </svg>
+        </div>
 
       {/* Field Dropdown */}
       <select
@@ -328,6 +336,16 @@ export const RuleRow: React.FC<RuleRowProps> = ({ rule, parentId }) => {
           />
         </svg>
       </button>
+      </div>
+
+      {error && (
+        <div className="text-[10px] font-bold text-red-500 dark:text-red-400 pl-0 sm:pl-8 flex items-center gap-1.5 animate-fade-in mt-0.5">
+          <svg className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          {error}
+        </div>
+      )}
     </div>
   );
 };

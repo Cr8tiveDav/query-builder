@@ -5,12 +5,17 @@ import { useQueryStore } from "@/hooks/useQueryStore";
 import { generateSQL } from "@/utils/queryGenerators";
 import { QueryGroup } from "@/components/builder/QueryGroup";
 import { SavePresetModal } from "./SavePresetModal";
+import { validateQueryTree } from "@/utils/queryValidator";
 
 export const QueryCanvas: React.FC = () => {
   const { currentSchema, queryTree, resetQuery, addHistoryEntry } = useQueryStore();
   const [isRunning, setIsRunning] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+
+  // Compute validation state reactively
+  const validationErrors = validateQueryTree(queryTree, currentSchema.id);
+  const isValid = Object.keys(validationErrors).length === 0;
 
   const handleRunQuery = () => {
     setIsRunning(true);
@@ -45,9 +50,11 @@ export const QueryCanvas: React.FC = () => {
         
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setIsSaveModalOpen(true)}
+            onClick={() => isValid && setIsSaveModalOpen(true)}
+            disabled={!isValid}
             type="button"
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-zinc-700 bg-white border border-zinc-200 shadow-sm hover:bg-zinc-50 hover:text-zinc-900 focus:outline-none dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:text-zinc-50 transition"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-zinc-700 bg-white border border-zinc-200 shadow-sm hover:bg-zinc-50 hover:text-zinc-900 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:text-zinc-50 transition"
+            title={!isValid ? "Resolve validation errors before saving preset" : "Save preset"}
           >
             <svg className="h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
@@ -65,9 +72,10 @@ export const QueryCanvas: React.FC = () => {
           
           <button
             onClick={handleRunQuery}
-            disabled={isRunning}
+            disabled={isRunning || !isValid}
             type="button"
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold text-white bg-indigo-600 shadow-md shadow-indigo-600/10 hover:bg-indigo-500 hover:shadow-indigo-500/20 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed dark:bg-indigo-600 dark:hover:bg-indigo-700 transition"
+            title={!isValid ? "Resolve validation errors before running query" : "Execute query"}
           >
             {isRunning ? (
               <>
