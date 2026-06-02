@@ -8,6 +8,7 @@ import { SavePresetModal } from "./SavePresetModal";
 import { validateQueryTree } from "@/utils/queryValidator";
 import { MOCK_USERS, MOCK_PRODUCTS, MOCK_LOGS } from "@/utils/mockData";
 import { evaluateQuery } from "@/utils/queryEvaluator";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 export const QueryCanvas: React.FC = () => {
   const { currentSchema, queryTree, resetQuery, addHistoryEntry } = useQueryStore();
@@ -21,6 +22,91 @@ export const QueryCanvas: React.FC = () => {
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
+  // Export JSON flow
+  const handleExportJSON = () => {
+    const dataStr = JSON.stringify(
+      {
+        currentSchemaId: currentSchema.id,
+        queryTree,
+      },
+      null,
+      2
+    );
+    const dataUri =
+      "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
+
+    const exportFileDefaultName = `querycraft-${currentSchema.id}-query.json`;
+
+    const linkElement = document.createElement("a");
+    linkElement.setAttribute("href", dataUri);
+    linkElement.setAttribute("download", exportFileDefaultName);
+    linkElement.click();
+  };
+
+  // Import JSON flow
+  const handleImportJSON = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const fileReader = new FileReader();
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    fileReader.readAsText(files[0], "UTF-8");
+    fileReader.onload = (event) => {
+      try {
+        const parsed = JSON.parse(event.target?.result as string);
+        
+        // Sanity Check JSON structure
+        const isValidQueryNode = (node: any): boolean => {
+          if (!node || typeof node !== "object") return false;
+          if (node.type === "rule") {
+            return (
+              typeof node.id === "string" &&
+              typeof node.field === "string" &&
+              typeof node.operator === "string"
+            );
+          }
+          if (node.type === "group") {
+            return (
+              typeof node.id === "string" &&
+              (node.conjunction === "AND" || node.conjunction === "OR") &&
+              Array.isArray(node.children) &&
+              node.children.every(isValidQueryNode)
+            );
+          }
+          return false;
+        };
+
+        const isValidImport = (json: any): boolean => {
+          if (!json || typeof json !== "object") return false;
+          const { currentSchemaId, queryTree } = json;
+          if (!currentSchemaId || !queryTree) return false;
+          const isSchemaValid = ["users", "products", "logs"].includes(
+            currentSchemaId
+          );
+          return (
+            isSchemaValid &&
+            isValidQueryNode(queryTree) &&
+            queryTree.type === "group"
+          );
+        };
+
+        if (isValidImport(parsed)) {
+          const { setSchema, loadQuery } = useQueryStore.getState();
+          setSchema(parsed.currentSchemaId);
+          setTimeout(() => {
+            loadQuery(parsed.queryTree);
+            setSuccessMessage("Query JSON imported successfully!");
+            setTimeout(() => setSuccessMessage(null), 3000);
+          }, 50);
+        } else {
+          alert("Invalid query schema file. Please load a valid QueryCraft JSON file.");
+        }
+      } catch (err) {
+        alert("Error parsing JSON file. Please verify formatting.");
+      }
+    };
+    e.target.value = "";
+  };
+
   // Reset execution state on schema changes
   useEffect(() => {
     setResults(null);
@@ -32,6 +118,26 @@ export const QueryCanvas: React.FC = () => {
   // Compute validation state reactively
   const validationErrors = validateQueryTree(queryTree, currentSchema.id);
   const isValid = Object.keys(validationErrors).length === 0;
+
+  // Global Keyboard Shortcuts
+  useKeyboardShortcuts({
+    onRunQuery: () => {
+      if (isValid && !isRunning) {
+        handleRunQuery();
+      }
+    },
+    onSavePreset: () => {
+      if (isValid) {
+        setIsSaveModalOpen(true);
+      }
+    },
+    onResetQuery: () => {
+      resetQuery();
+    },
+    onCloseModals: () => {
+      setIsSaveModalOpen(false);
+    },
+  });
 
   const handleRunQuery = () => {
     setIsRunning(true);
@@ -136,6 +242,39 @@ export const QueryCanvas: React.FC = () => {
         </div>
         
         <div className="flex items-center gap-3">
+          {/* Hidden Import File Input */}
+          <input
+            id="import-json-file"
+            type="file"
+            accept=".json"
+            onChange={handleImportJSON}
+            className="hidden"
+          />
+
+          <button
+            onClick={() => document.getElementById("import-json-file")?.click()}
+            type="button"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-zinc-700 bg-white border border-zinc-200 shadow-sm hover:bg-zinc-50 hover:text-zinc-900 focus:outline-none dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:text-zinc-50 transition cursor-pointer"
+            title="Import Query JSON"
+          >
+            <svg className="h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            Import JSON
+          </button>
+
+          <button
+            onClick={handleExportJSON}
+            type="button"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-zinc-700 bg-white border border-zinc-200 shadow-sm hover:bg-zinc-50 hover:text-zinc-900 focus:outline-none dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:text-zinc-50 transition cursor-pointer"
+            title="Export Query JSON"
+          >
+            <svg className="h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Export JSON
+          </button>
+
           <button
             onClick={() => isValid && setIsSaveModalOpen(true)}
             disabled={!isValid}
