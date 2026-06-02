@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { QueryGroup as QueryGroupType } from "@/types/query";
 import { useQueryStore } from "@/hooks/useQueryStore";
 import { RuleRow } from "./RuleRow";
+import { validateQueryTree } from "@/utils/queryValidator";
 
 interface QueryGroupProps {
   group: QueryGroupType;
@@ -12,6 +13,8 @@ interface QueryGroupProps {
 
 export const QueryGroup: React.FC<QueryGroupProps> = ({ group, depth = 0 }) => {
   const {
+    queryTree,
+    currentSchema,
     updateGroupConjunction,
     toggleGroupCollapse,
     addRule,
@@ -20,6 +23,10 @@ export const QueryGroup: React.FC<QueryGroupProps> = ({ group, depth = 0 }) => {
   } = useQueryStore();
 
   const [isDragging, setIsDragging] = useState(false);
+  
+  // Compute validation errors reactively using derived state
+  const validationErrors = validateQueryTree(queryTree, currentSchema.id);
+  const error = validationErrors[group.id];
   const [isDragOver, setIsDragOver] = useState(false);
   
   // Track if drag started from the handle
@@ -215,9 +222,24 @@ export const QueryGroup: React.FC<QueryGroupProps> = ({ group, depth = 0 }) => {
       {!isCollapsed && (
         <div className="flex flex-col gap-4 mt-2">
           {group.children.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800/80 bg-zinc-50/20 dark:bg-zinc-950/10">
-              <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500">
-                Empty Group logic. Click "Add Rule" or "Add Group" to build query criteria.
+            <div
+              className={`flex flex-col items-center justify-center py-6 px-4 rounded-xl border border-dashed bg-zinc-50/20 dark:bg-zinc-950/10 ${
+                error
+                  ? "border-red-500/60 dark:border-red-500/40 text-red-500"
+                  : "border-zinc-200 dark:border-zinc-800/80 text-zinc-400 dark:text-zinc-500"
+              }`}
+            >
+              <span className="text-[10px] font-semibold tracking-wide flex items-center gap-1.5 text-center">
+                {error ? (
+                  <>
+                    <svg className="h-4 w-4 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    {error}
+                  </>
+                ) : (
+                  "Empty logic group. Click 'Add Rule' or 'Add Group' to construct conditions."
+                )}
               </span>
             </div>
           ) : (
