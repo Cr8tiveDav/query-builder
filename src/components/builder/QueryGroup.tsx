@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { QueryGroup as QueryGroupType } from "@/types/query";
 import { useQueryStore } from "@/hooks/useQueryStore";
 import { RuleRow } from "./RuleRow";
@@ -19,6 +19,12 @@ export const QueryGroup: React.FC<QueryGroupProps> = ({ group, depth = 0 }) => {
     removeNode,
   } = useQueryStore();
 
+  const [isDragging, setIsDragging] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+  
+  // Track if drag started from the handle
+  const isDraggingHandle = useRef(false);
+
   const isRoot = group.id === "root";
   const isCollapsed = !!group.isCollapsed;
 
@@ -31,13 +37,89 @@ export const QueryGroup: React.FC<QueryGroupProps> = ({ group, depth = 0 }) => {
   ];
   const borderAccent = borderColors[depth % borderColors.length];
 
+  // Reset dragover state globally when any drag operation ends
+  useEffect(() => {
+    const handleGlobalDragEnd = () => {
+      setIsDragOver(false);
+    };
+    window.addEventListener("dragend", handleGlobalDragEnd);
+    return () => window.removeEventListener("dragend", handleGlobalDragEnd);
+  }, []);
+
+  // Drag and Drop handlers for logical groups
+  const handleDragStart = (e: React.DragEvent) => {
+    if (!isDraggingHandle.current) {
+      e.preventDefault();
+      return;
+    }
+    e.stopPropagation();
+    e.dataTransfer.setData("text/plain", group.id);
+    e.dataTransfer.effectAllowed = "move";
+    setIsDragging(true);
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+    isDraggingHandle.current = false;
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "move";
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    
+    const draggedId = e.dataTransfer.getData("text/plain");
+    if (draggedId && draggedId !== group.id) {
+      useQueryStore.getState().moveNode(draggedId, group.id, group.children.length);
+    }
+  };
+
   return (
     <div
-      className={`flex flex-col gap-4 border-l-2 ${borderAccent} pl-4 sm:pl-6 py-2 w-full transition-all duration-300`}
+      draggable={!isRoot}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      className={`flex flex-col gap-4 border-l-2 ${borderAccent} pl-4 sm:pl-6 py-2 w-full transition-all duration-300 ${
+        isDragging ? "opacity-40" : ""
+      } ${
+        isDragOver
+          ? "border-dashed border-l-2 border-indigo-500 bg-indigo-500/5 dark:border-l-indigo-500/80 dark:bg-indigo-500/10 rounded-xl"
+          : ""
+      }`}
     >
       {/* Group Header Controls */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200/40 pb-3 dark:border-zinc-800/30">
         <div className="flex items-center gap-3">
+          {/* Drag Handle for Subgroups (Hidden for root group) */}
+          {!isRoot && (
+            <div
+              onMouseDown={() => { isDraggingHandle.current = true; }}
+              onMouseUp={() => { isDraggingHandle.current = false; }}
+              className="drag-handle flex items-center text-zinc-300 dark:text-zinc-700 cursor-grab active:cursor-grabbing"
+              title="Drag Group"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 8h16M4 16h16" />
+              </svg>
+            </div>
+          )}
+
           {/* Collapse Toggle */}
           <button
             onClick={() => toggleGroupCollapse(group.id)}
