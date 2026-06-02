@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { QueryGroup as QueryGroupType } from "@/types/query";
 import { useQueryStore } from "@/hooks/useQueryStore";
 import { RuleRow } from "./RuleRow";
@@ -19,9 +19,11 @@ export const QueryGroup: React.FC<QueryGroupProps> = ({ group, depth = 0 }) => {
     removeNode,
   } = useQueryStore();
 
-  const [isDraggable, setIsDraggable] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
+  
+  // Track if drag started from the handle
+  const isDraggingHandle = useRef(false);
 
   const isRoot = group.id === "root";
   const isCollapsed = !!group.isCollapsed;
@@ -35,8 +37,21 @@ export const QueryGroup: React.FC<QueryGroupProps> = ({ group, depth = 0 }) => {
   ];
   const borderAccent = borderColors[depth % borderColors.length];
 
+  // Reset dragover state globally when any drag operation ends
+  useEffect(() => {
+    const handleGlobalDragEnd = () => {
+      setIsDragOver(false);
+    };
+    window.addEventListener("dragend", handleGlobalDragEnd);
+    return () => window.removeEventListener("dragend", handleGlobalDragEnd);
+  }, []);
+
   // Drag and Drop handlers for logical groups
   const handleDragStart = (e: React.DragEvent) => {
+    if (!isDraggingHandle.current) {
+      e.preventDefault();
+      return;
+    }
     e.stopPropagation();
     e.dataTransfer.setData("text/plain", group.id);
     e.dataTransfer.effectAllowed = "move";
@@ -45,7 +60,7 @@ export const QueryGroup: React.FC<QueryGroupProps> = ({ group, depth = 0 }) => {
 
   const handleDragEnd = () => {
     setIsDragging(false);
-    setIsDraggable(false);
+    isDraggingHandle.current = false;
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -74,7 +89,7 @@ export const QueryGroup: React.FC<QueryGroupProps> = ({ group, depth = 0 }) => {
 
   return (
     <div
-      draggable={isDraggable && !isRoot}
+      draggable={!isRoot}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onDragOver={handleDragOver}
@@ -94,9 +109,9 @@ export const QueryGroup: React.FC<QueryGroupProps> = ({ group, depth = 0 }) => {
           {/* Drag Handle for Subgroups (Hidden for root group) */}
           {!isRoot && (
             <div
-              onMouseEnter={() => setIsDraggable(true)}
-              onMouseLeave={() => setIsDraggable(false)}
-              className="flex items-center text-zinc-300 dark:text-zinc-700 cursor-grab active:cursor-grabbing"
+              onMouseDown={() => { isDraggingHandle.current = true; }}
+              onMouseUp={() => { isDraggingHandle.current = false; }}
+              className="drag-handle flex items-center text-zinc-300 dark:text-zinc-700 cursor-grab active:cursor-grabbing"
               title="Drag Group"
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

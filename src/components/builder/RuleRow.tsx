@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { QueryRule } from "@/types/query";
 import { useQueryStore } from "@/hooks/useQueryStore";
 
@@ -12,9 +12,11 @@ interface RuleRowProps {
 export const RuleRow: React.FC<RuleRowProps> = ({ rule, parentId }) => {
   const { currentSchema, updateRule, removeNode } = useQueryStore();
   const [tagInput, setTagInput] = useState("");
-  const [isDraggable, setIsDraggable] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
+  
+  // Track if drag started from the handle
+  const isDraggingHandle = useRef(false);
 
   const fieldDef =
     currentSchema.fields.find((f) => f.name === rule.field) ||
@@ -25,6 +27,15 @@ export const RuleRow: React.FC<RuleRowProps> = ({ rule, parentId }) => {
   const maxVal = rule.value?.max ?? "";
   const startVal = rule.value?.start ?? "";
   const endVal = rule.value?.end ?? "";
+
+  // Reset dragover state globally when any drag operation ends
+  useEffect(() => {
+    const handleGlobalDragEnd = () => {
+      setIsDragOver(false);
+    };
+    window.addEventListener("dragend", handleGlobalDragEnd);
+    return () => window.removeEventListener("dragend", handleGlobalDragEnd);
+  }, []);
 
   const handleFieldChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     updateRule(rule.id, { field: e.target.value });
@@ -58,6 +69,11 @@ export const RuleRow: React.FC<RuleRowProps> = ({ rule, parentId }) => {
 
   // Drag and Drop Handlers
   const handleDragStart = (e: React.DragEvent) => {
+    if (!isDraggingHandle.current) {
+      e.preventDefault();
+      return;
+    }
+    e.stopPropagation();
     e.dataTransfer.setData("text/plain", rule.id);
     e.dataTransfer.effectAllowed = "move";
     setIsDragging(true);
@@ -65,7 +81,7 @@ export const RuleRow: React.FC<RuleRowProps> = ({ rule, parentId }) => {
 
   const handleDragEnd = () => {
     setIsDragging(false);
-    setIsDraggable(false);
+    isDraggingHandle.current = false;
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -112,7 +128,7 @@ export const RuleRow: React.FC<RuleRowProps> = ({ rule, parentId }) => {
 
   return (
     <div
-      draggable={isDraggable}
+      draggable={true}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onDragOver={handleDragOver}
@@ -128,9 +144,9 @@ export const RuleRow: React.FC<RuleRowProps> = ({ rule, parentId }) => {
     >
       {/* Drag Handle */}
       <div
-        onMouseEnter={() => setIsDraggable(true)}
-        onMouseLeave={() => setIsDraggable(false)}
-        className="hidden sm:flex items-center text-zinc-300 dark:text-zinc-700 cursor-grab active:cursor-grabbing mr-1"
+        onMouseDown={() => { isDraggingHandle.current = true; }}
+        onMouseUp={() => { isDraggingHandle.current = false; }}
+        className="drag-handle hidden sm:flex items-center text-zinc-300 dark:text-zinc-700 cursor-grab active:cursor-grabbing mr-1"
       >
         <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 8h16M4 16h16" />
