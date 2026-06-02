@@ -1,17 +1,33 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQueryStore } from "@/hooks/useQueryStore";
 import { generateSQL } from "@/utils/queryGenerators";
 import { QueryGroup } from "@/components/builder/QueryGroup";
 import { SavePresetModal } from "./SavePresetModal";
 import { validateQueryTree } from "@/utils/queryValidator";
+import { MOCK_USERS, MOCK_PRODUCTS, MOCK_LOGS } from "@/utils/mockData";
+import { evaluateQuery } from "@/utils/queryEvaluator";
 
 export const QueryCanvas: React.FC = () => {
   const { currentSchema, queryTree, resetQuery, addHistoryEntry } = useQueryStore();
   const [isRunning, setIsRunning] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+
+  // Query Execution States
+  const [results, setResults] = useState<any[] | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortField, setSortField] = useState<string | null>(null);
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+
+  // Reset execution state on schema changes
+  useEffect(() => {
+    setResults(null);
+    setCurrentPage(1);
+    setSortField(null);
+    setSortOrder("asc");
+  }, [currentSchema.id]);
 
   // Compute validation state reactively
   const validationErrors = validateQueryTree(queryTree, currentSchema.id);
@@ -20,19 +36,90 @@ export const QueryCanvas: React.FC = () => {
   const handleRunQuery = () => {
     setIsRunning(true);
     setSuccessMessage(null);
+    setResults(null);
 
-    // Simulate query execution delay
+    // Select the correct mock dataset
+    let dataset: any[] = [];
+    if (currentSchema.id === "users") {
+      dataset = MOCK_USERS;
+    } else if (currentSchema.id === "products") {
+      dataset = MOCK_PRODUCTS;
+    } else if (currentSchema.id === "logs") {
+      dataset = MOCK_LOGS;
+    }
+
     setTimeout(() => {
       const sql = generateSQL(queryTree, currentSchema.id);
-      const mockCount = Math.floor(Math.random() * 450) + 12; // Random count between 12 and 462
+      const filtered = evaluateQuery(queryTree, dataset);
       
-      addHistoryEntry(sql, mockCount);
+      setResults(filtered);
+      addHistoryEntry(sql, filtered.length);
       setIsRunning(false);
-      setSuccessMessage(`Executed successfully! Returned ${mockCount} results.`);
+      setSuccessMessage(`Executed successfully! Returned ${filtered.length} matching records.`);
       
-      // Auto-hide success toast after 3 seconds
       setTimeout(() => setSuccessMessage(null), 3000);
-    }, 600); // 600ms
+    }, 500);
+  };
+
+  // Derived columns from currentSchema
+  const columns = currentSchema.fields.map((f) => ({
+    name: f.name,
+    label: f.label,
+  }));
+
+  const getSortedResults = () => {
+    if (!results) return [];
+    if (!sortField) return results;
+
+    return [...results].sort((a, b) => {
+      const aVal = a[sortField];
+      const bVal = b[sortField];
+
+      if (aVal === undefined || aVal === null) return 1;
+      if (bVal === undefined || bVal === null) return -1;
+
+      if (typeof aVal === "number" && typeof bVal === "number") {
+        return sortOrder === "asc" ? aVal - bVal : bVal - aVal;
+      }
+      
+      if (typeof aVal === "boolean" && typeof bVal === "boolean") {
+        return sortOrder === "asc"
+          ? aVal === bVal
+            ? 0
+            : aVal
+            ? 1
+            : -1
+          : aVal === bVal
+          ? 0
+          : bVal
+          ? 1
+          : -1;
+      }
+
+      const aStr = String(aVal).toLowerCase();
+      const bStr = String(bVal).toLowerCase();
+      return sortOrder === "asc"
+        ? aStr.localeCompare(bStr)
+        : bStr.localeCompare(aStr);
+    });
+  };
+
+  const sortedResults = getSortedResults();
+  const itemsPerPage = 5;
+  const totalPages = Math.ceil(sortedResults.length / itemsPerPage);
+  const paginatedResults = sortedResults.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const handleHeaderClick = (field: string) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+    setCurrentPage(1);
   };
 
   return (
@@ -109,9 +196,126 @@ export const QueryCanvas: React.FC = () => {
       )}
 
       {/* Builder Workspace Layout */}
-      <div className="flex-1 flex flex-col items-start justify-start p-6 sm:p-8 rounded-2xl border border-zinc-200/60 bg-white/50 dark:border-zinc-800/60 dark:bg-zinc-950/20 backdrop-blur-sm min-h-[350px] overflow-x-auto">
+      <div className="flex flex-col items-start justify-start p-6 sm:p-8 rounded-2xl border border-zinc-200/60 bg-white/50 dark:border-zinc-800/60 dark:bg-zinc-950/20 backdrop-blur-sm min-h-[350px] overflow-x-auto">
         <QueryGroup group={queryTree} />
       </div>
+
+      {/* Loading state during execution */}
+      {isRunning && (
+        <div className="mt-8 flex flex-col items-center justify-center p-12 rounded-2xl border border-zinc-200/60 bg-white/50 dark:border-zinc-800/60 dark:bg-zinc-950/20 backdrop-blur-sm transition-all duration-300">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+          <span className="text-xs font-semibold text-zinc-500 mt-4 animate-pulse">Filtering dataset records...</span>
+        </div>
+      )}
+
+      {/* Query Results Simulator Grid */}
+      {!isRunning && results !== null && (
+        <div className="mt-8 flex flex-col gap-4 p-6 rounded-2xl border border-zinc-200/60 bg-white/50 dark:border-zinc-800/60 dark:bg-zinc-950/20 backdrop-blur-sm transition-all duration-300 animate-fade-in">
+          <div className="flex items-center justify-between border-b border-zinc-200/40 pb-3 dark:border-zinc-800/40">
+            <div>
+              <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                Execution Results
+              </h3>
+              <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                Inspect matching database records evaluated in real-time.
+              </p>
+            </div>
+            <span className="rounded-md bg-zinc-100 px-2 py-0.5 text-[10px] font-bold text-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-400">
+              {results.length} Matches Found
+            </span>
+          </div>
+
+          {results.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10 text-center">
+              <svg className="h-10 w-10 text-zinc-300 dark:text-zinc-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <h4 className="mt-2 text-xs font-bold text-zinc-700 dark:text-zinc-300">No Records Match Query</h4>
+              <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-1 max-w-[280px]">
+                Try adjusting operators, lessening nesting constraints, or entering general criteria values.
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Results Table */}
+              <div className="overflow-x-auto rounded-xl border border-zinc-200/50 dark:border-zinc-800/50 bg-white dark:bg-zinc-900/10">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-zinc-50/70 border-b border-zinc-200/50 text-[10px] font-bold text-zinc-500 uppercase tracking-wider dark:bg-zinc-900/50 dark:border-zinc-800/50">
+                      {columns.map((col) => (
+                        <th
+                          key={col.name}
+                          onClick={() => handleHeaderClick(col.name)}
+                          className="px-4 py-3 cursor-pointer hover:bg-zinc-100/50 dark:hover:bg-zinc-800/40 select-none transition-colors"
+                        >
+                          <div className="flex items-center gap-1.5">
+                            {col.label}
+                            {sortField === col.name && (
+                              <span className="text-[8px] text-indigo-500 dark:text-indigo-400">
+                                {sortOrder === "asc" ? "▲" : "▼"}
+                              </span>
+                            )}
+                          </div>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-200/40 dark:divide-zinc-800/30 text-xs">
+                    {paginatedResults.map((record, index) => (
+                      <tr key={record.id || index} className="hover:bg-zinc-50/30 dark:hover:bg-zinc-900/5 transition-colors">
+                        {columns.map((col) => {
+                          const val = record[col.name];
+                          let rendered = String(val ?? "");
+                          if (typeof val === "boolean") {
+                            rendered = val ? "TRUE" : "FALSE";
+                          }
+                          return (
+                            <td key={col.name} className="px-4 py-2.5 font-medium text-zinc-700 dark:text-zinc-300">
+                              {rendered}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between border-t border-zinc-200/40 pt-4 dark:border-zinc-800/40">
+                  <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500">
+                    Showing {Math.min(results.length, (currentPage - 1) * itemsPerPage + 1)}-{Math.min(results.length, currentPage * itemsPerPage)} of {results.length} rows
+                  </span>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-600 disabled:opacity-40 disabled:cursor-not-allowed dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 transition"
+                    >
+                      Prev
+                    </button>
+                    
+                    <span className="text-[10px] font-bold text-zinc-600 dark:text-zinc-400">
+                      Page {currentPage} of {totalPages}
+                    </span>
+
+                    <button
+                      onClick={() => setCurrentPage(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-600 disabled:opacity-40 disabled:cursor-not-allowed dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 transition"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
 
       <SavePresetModal isOpen={isSaveModalOpen} onClose={() => setIsSaveModalOpen(false)} />
     </div>
