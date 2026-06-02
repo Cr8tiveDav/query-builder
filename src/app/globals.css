@@ -11,11 +11,11 @@
   --sidebar-bg: #ffffff;
   --sidebar-border: #e2e8f0;
   
-  --primary: 99 102 241; /* Indigo: #6366f1 */
-  --primary-hover: 79 70 229; /* #4f46e5 */
+  --primary: 66 114 255; /* Brand color: #4272FF */
+  --primary-hover: 37 84 224; /* #2554E0 */
   --secondary: 168 85 247; /* Purple: #a855f7 */
   
-  --accent-glow: rgba(99, 102, 241, 0.15);
+  --accent-glow: rgba(66, 114, 255, 0.15);
   --scroll-thumb: #cbd5e1;
   --scroll-track: #f1f5f9;
 }
@@ -30,7 +30,7 @@
   --sidebar-bg: #0c0c0e;
   --sidebar-border: #1e1e24;
   
-  --accent-glow: rgba(168, 85, 247, 0.15);
+  --accent-glow: rgba(66, 114, 255, 0.15);
   --scroll-thumb: #3f3f46;
   --scroll-track: #18181b;
 }
@@ -40,6 +40,18 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+  
+  --color-indigo-50: #eff3ff;
+  --color-indigo-100: #dbe4ff;
+  --color-indigo-200: #c0cfff;
+  --color-indigo-300: #98b2ff;
+  --color-indigo-400: #688bff;
+  --color-indigo-500: #4272ff;
+  --color-indigo-600: #2554e0;
+  --color-indigo-700: #1c3fbf;
+  --color-indigo-800: #17339d;
+  --color-indigo-900: #172c7d;
+  --color-indigo-950: #0e184b;
 }
 
 body {
