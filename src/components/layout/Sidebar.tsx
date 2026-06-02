@@ -12,6 +12,7 @@ export const Sidebar: React.FC = () => {
     setSchema,
     loadQuery,
     clearHistory,
+    deletePreset,
   } = useQueryStore();
 
   const handleLoadPreset = (preset: typeof presets[0]) => {
@@ -59,20 +60,42 @@ export const Sidebar: React.FC = () => {
             </p>
           ) : (
             <div className="flex flex-col gap-2">
-              {activePresets.map((preset) => (
-                <button
-                  key={preset.id}
-                  onClick={() => handleLoadPreset(preset)}
-                  className="group flex flex-col items-start rounded-xl border border-zinc-200/60 bg-white p-3 text-left shadow-sm hover:border-indigo-500 hover:ring-1 hover:ring-indigo-500 dark:border-zinc-800/60 dark:bg-zinc-900/40 dark:hover:border-indigo-500/80 transition-all duration-200"
-                >
-                  <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-indigo-500 dark:group-hover:text-indigo-400">
-                    {preset.name}
-                  </span>
-                  <span className="mt-1 text-[10px] text-zinc-500 dark:text-zinc-400 line-clamp-2 leading-relaxed">
-                    {preset.description}
-                  </span>
-                </button>
-              ))}
+              {activePresets.map((preset) => {
+                const isCustom = preset.id.startsWith("custom-preset-");
+                return (
+                  <div
+                    key={preset.id}
+                    onClick={() => handleLoadPreset(preset)}
+                    className="group flex items-start justify-between rounded-xl border border-zinc-200/60 bg-white p-3 text-left shadow-sm hover:border-indigo-500 hover:ring-1 hover:ring-indigo-500 dark:border-zinc-800/60 dark:bg-zinc-900/40 dark:hover:border-indigo-500/80 cursor-pointer transition-all duration-200"
+                  >
+                    <div className="flex flex-col flex-1 min-w-0 pr-2">
+                      <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-indigo-500 dark:group-hover:text-indigo-400">
+                        {preset.name}
+                      </span>
+                      {preset.description && (
+                        <span className="mt-1 text-[10px] text-zinc-500 dark:text-zinc-400 line-clamp-2 leading-relaxed">
+                          {preset.description}
+                        </span>
+                      )}
+                    </div>
+                    {isCustom && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deletePreset(preset.id);
+                        }}
+                        type="button"
+                        className="p-1 rounded-lg text-zinc-400 hover:text-red-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 dark:text-zinc-500 dark:hover:text-red-400 transition-colors focus:outline-none shrink-0"
+                        title="Delete custom preset"
+                      >
+                        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

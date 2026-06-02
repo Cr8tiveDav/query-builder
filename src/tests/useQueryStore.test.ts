@@ -115,4 +115,26 @@ describe('useQueryStore State Actions', () => {
     expect(group1.children[0].id).toBe(rule2Id);
     expect(group1.children[1].id).toBe(rule1Id);
   });
+
+  it('should support saving a query as a custom preset and deleting it', () => {
+    const store = useQueryStore.getState();
+    const initialPresetCount = store.presets.length;
+
+    // Save current query tree as preset
+    store.saveAsPreset('My Custom Preset', 'This is a test custom preset');
+    
+    let updatedState = useQueryStore.getState();
+    expect(updatedState.presets).toHaveLength(initialPresetCount + 1);
+    
+    const newPreset = updatedState.presets[updatedState.presets.length - 1];
+    expect(newPreset.name).toBe('My Custom Preset');
+    expect(newPreset.description).toBe('This is a test custom preset');
+    expect(newPreset.id.startsWith('custom-preset-')).toBe(true);
+
+    // Delete the preset
+    store.deletePreset(newPreset.id);
+    updatedState = useQueryStore.getState();
+    expect(updatedState.presets).toHaveLength(initialPresetCount);
+    expect(updatedState.presets.find(p => p.id === newPreset.id)).toBeUndefined();
+  });
 });

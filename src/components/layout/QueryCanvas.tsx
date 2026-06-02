@@ -4,11 +4,13 @@ import React, { useState } from "react";
 import { useQueryStore } from "@/hooks/useQueryStore";
 import { generateSQL } from "@/utils/queryGenerators";
 import { QueryGroup } from "@/components/builder/QueryGroup";
+import { SavePresetModal } from "./SavePresetModal";
 
 export const QueryCanvas: React.FC = () => {
   const { currentSchema, queryTree, resetQuery, addHistoryEntry } = useQueryStore();
   const [isRunning, setIsRunning] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
 
   const handleRunQuery = () => {
     setIsRunning(true);
@@ -42,6 +44,17 @@ export const QueryCanvas: React.FC = () => {
         </div>
         
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsSaveModalOpen(true)}
+            type="button"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-zinc-700 bg-white border border-zinc-200 shadow-sm hover:bg-zinc-50 hover:text-zinc-900 focus:outline-none dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:text-zinc-50 transition"
+          >
+            <svg className="h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+            </svg>
+            Save Preset
+          </button>
+
           <button
             onClick={resetQuery}
             type="button"
@@ -91,6 +104,8 @@ export const QueryCanvas: React.FC = () => {
       <div className="flex-1 flex flex-col items-start justify-start p-6 sm:p-8 rounded-2xl border border-zinc-200/60 bg-white/50 dark:border-zinc-800/60 dark:bg-zinc-950/20 backdrop-blur-sm min-h-[350px] overflow-x-auto">
         <QueryGroup group={queryTree} />
       </div>
+
+      <SavePresetModal isOpen={isSaveModalOpen} onClose={() => setIsSaveModalOpen(false)} />
     </div>
   );
 };
