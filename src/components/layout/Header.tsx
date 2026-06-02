@@ -3,35 +3,21 @@
 import React, { useEffect, useState } from "react";
 import { useQueryStore } from "@/hooks/useQueryStore";
 import { SCHEMAS } from "@/utils/schemas";
+import { useTheme } from "next-themes";
 
 export const Header: React.FC = () => {
   const { currentSchema, setSchema } = useQueryStore();
-  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const { theme, setTheme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
 
-  // Load and apply theme from localStorage/system
+  // Set mounted flag to avoid hydration errors
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme") as "light" | "dark" | null;
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const initialTheme = savedTheme || (prefersDark ? "dark" : "light");
-    
-    setTheme(initialTheme);
-    if (initialTheme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
+    setMounted(true);
   }, []);
 
   const toggleTheme = () => {
-    const nextTheme = theme === "light" ? "dark" : "light";
-    setTheme(nextTheme);
-    localStorage.setItem("theme", nextTheme);
-    
-    if (nextTheme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
+    const activeTheme = theme === "system" ? resolvedTheme : theme;
+    setTheme(activeTheme === "light" ? "dark" : "light");
   };
 
   return (
@@ -96,7 +82,7 @@ export const Header: React.FC = () => {
             className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 shadow-sm hover:bg-zinc-50 focus:outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800"
             aria-label="Toggle Theme"
           >
-            {theme === "light" ? (
+            {!mounted || (theme === "system" ? resolvedTheme : theme) !== "dark" ? (
               // Moon Icon
               <svg
                 className="h-5 w-5"
