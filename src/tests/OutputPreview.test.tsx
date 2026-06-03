@@ -1,6 +1,6 @@
 import React from "react";
 import { describe, it, expect } from "vitest";
-import { highlightSQL, highlightJSON } from "@/components/layout/OutputPreview";
+import { highlightSQL, highlightJSON } from "@/components/builder/preview/OutputPreview";
 
 describe("OutputPreview Syntax Highlighting", () => {
   describe("highlightSQL", () => {

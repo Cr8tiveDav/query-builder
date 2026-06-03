@@ -1,16 +1,16 @@
 "use client";
 
 import React from "react";
-import { Header } from "./Header";
-import { Sidebar } from "./Sidebar";
-import { QueryCanvas } from "./QueryCanvas";
-import { OutputPreview } from "./OutputPreview";
+import { WorkspaceNavbar } from "@/components/navigation/WorkspaceNavbar";
+import { Sidebar } from "./sidebar/Sidebar";
+import { QueryCanvas } from "./canvas/QueryCanvas";
+import { OutputPreview } from "./preview/OutputPreview";
 
 export const AppShell: React.FC = () => {
   return (
     <div className="flex min-h-screen flex-col bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50 transition-colors duration-300">
       {/* Top Header */}
-      <Header />
+      <WorkspaceNavbar />
       
       {/* Sidebar + Main Canvas Grid */}
       <div className="flex flex-1 flex-col lg:flex-row overflow-hidden max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 gap-6">

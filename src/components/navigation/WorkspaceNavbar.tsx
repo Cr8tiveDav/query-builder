@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import { useQueryStore } from "@/hooks/useQueryStore";
 import { SCHEMAS } from "@/utils/schemas";
 import { useTheme } from "next-themes";
 
-export const Header: React.FC = () => {
+export const WorkspaceNavbar: React.FC = () => {
   const { currentSchema, setSchema } = useQueryStore();
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -24,8 +25,8 @@ export const Header: React.FC = () => {
     <header className="sticky top-0 z-40 w-full border-b border-zinc-200/80 bg-white/80 backdrop-blur-md dark:border-zinc-800/80 dark:bg-zinc-950/80 transition-colors duration-300">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo and Brand */}
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-md shadow-indigo-500/20">
+        <Link href="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-[#4272FF] shadow-md shadow-indigo-500/20">
             <svg
               className="h-6 w-6 text-white"
               fill="none"
@@ -41,15 +42,15 @@ export const Header: React.FC = () => {
               />
             </svg>
           </div>
-          <div>
-            <h1 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50 leading-none">
+          <div className="flex flex-col">
+            <h1 className="text-sm font-bold tracking-tight text-zinc-900 dark:text-zinc-50 leading-none">
               QueryCraft
             </h1>
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-indigo-500 dark:text-indigo-400">
-              Visual Builder
+            <span className="text-[9px] font-extrabold tracking-wider text-[#4272FF] dark:text-[#4272FF] uppercase mt-1">
+              VISUAL BUILDER
             </span>
           </div>
-        </div>
+        </Link>
 
         {/* Action Controls */}
         <div className="flex items-center gap-4">
