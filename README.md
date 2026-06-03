@@ -4,6 +4,45 @@ QueryCraft is a highly interactive, schema-driven visual query builder built wit
 
 ---
 
+## Directory & Component Architecture
+
+Below is the directory tree of the restructured component layout:
+
+```text
+src/
+├── app/
+│   ├── builder/
+│   │   └── page.tsx              # Workstation workspace page
+│   ├── layout.tsx                # Global layout with ThemeProvider
+│   └── page.tsx                  # Landing page assembler
+├── components/
+│   ├── builder/                  # Workstation / Editor components
+│   │   ├── canvas/
+│   │   │   └── QueryCanvas.tsx   # Canvas grid & results table
+│   │   ├── modals/
+│   │   │   └── SavePresetModal.tsx
+│   │   ├── nodes/
+│   │   │   ├── QueryGroup.tsx    # Conjunction node (AND/OR tree)
+│   │   │   └── RuleRow.tsx       # Individual query rule input row
+│   │   ├── preview/
+│   │   │   └── OutputPreview.tsx # Syntax-highlighted SQL/JSON previewer
+│   │   ├── sidebar/
+│   │   │   └── Sidebar.tsx       # Query presets & run history panels
+│   │   └── AppShell.tsx          # Workspace page shell layout
+│   ├── homepage/                 # Landing page marketing components
+│   │   ├── CtaBanner.tsx         # Bottom Banner layout section
+│   │   ├── Features.tsx          # Landing Features Grid block
+│   │   └── Hero.tsx              # Landing Hero details & live mockup
+│   ├── navigation/               # Universal navigation headers
+│   │   ├── Footer.tsx            # Copyright footer bar
+│   │   ├── LandingNavbar.tsx     # Floating landing header
+│   │   └── WorkspaceNavbar.tsx   # Editor workspace header
+│   └── providers/
+│       └── ThemeProvider.tsx     # System theme context wrapper
+```
+
+---
+
 ## Technical Architecture & Core Systems
 
 ### 1. State Management Decisions

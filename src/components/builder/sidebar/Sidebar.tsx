@@ -2,7 +2,6 @@
 
 import React from "react";
 import { useQueryStore } from "@/hooks/useQueryStore";
-import { SCHEMAS } from "@/utils/schemas";
 
 export const Sidebar: React.FC = () => {
   const {

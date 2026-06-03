@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { useQueryStore } from "@/hooks/useQueryStore";
 import { generateSQL } from "@/utils/queryGenerators";
-import { QueryGroup } from "@/components/builder/QueryGroup";
-import { SavePresetModal } from "./SavePresetModal";
+import { QueryGroup } from "@/components/builder/nodes/QueryGroup";
+import { SavePresetModal } from "@/components/builder/modals/SavePresetModal";
 import { validateQueryTree } from "@/utils/queryValidator";
 import { MOCK_USERS, MOCK_PRODUCTS, MOCK_LOGS } from "@/utils/mockData";
 import { evaluateQuery } from "@/utils/queryEvaluator";
